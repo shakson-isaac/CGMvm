@@ -1,0 +1,37 @@
+name: mambatf
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy<2.0
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - pytorch=2.1.0
+  - torchvision=0.16.0
+  - torchaudio=2.1.0
+  - pytorch-cuda=12.1
+  - pip:
+      - pytorch-forecasting==1.0.0
+      - pytorch-lightning==2.2.4
+      - mamba-ssm==2.2.5
+      - einops==0.8.1
+      - causal-conv1d==1.5.2
+      - huggingface-hub
+      - transformers==4.53.2
+      - tqdm
+      - tokenizers
+      - optuna
+      - shapely
+      - seaborn
+      - pyarrow
+      - regex
+      - safetensors
+      - fastapi
+      - uvicorn
+      - geopandas
+      - fsspec

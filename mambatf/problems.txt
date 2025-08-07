@@ -1,0 +1,21 @@
+Mention to Yentl in his code:
+
+1. Memory Leaking Issues with Dataloaders in Pytorch:
+Make the below both pin_memory = False, persistent_workers=True, so that the CPU memory does not increase for every batch loaded into memory!!!!
+
+ORIGINAL:
+# --- Dataloaders ---
+    train_dataloader = training.to_dataloader(
+        train=True,
+        batch_size=batchsize,
+        persistent_workers=True, # CHANGE TO REDUCE MEMORY USAGE (CHANGE TO FALSE)
+        num_workers=1,
+        pin_memory=True, # CHANGE TO REDUCE MOMORY USAGE (CHANGE TO FALSE)
+    )
+    val_dataloader = validation.to_dataloader(
+        train=False,
+        batch_size=batchsize,
+        num_workers=0,
+        persistent_workers=False,
+        pin_memory=False,
+    )

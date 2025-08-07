@@ -1,0 +1,98 @@
+# HEAP‑CGM GPU Conda Environment (`mambatf`)
+
+This README captures **everything required to reproduce or update** the GPU‑ready environment you just finished configuring on the Google Cloud VM.
+
+---
+
+## 1  Snapshot the environment now
+
+```bash
+# inside the VM (anywhere)
+conda activate mambatf
+conda env export --no-builds > environment.yml  # specification without local build hashes
+```
+
+Commit or copy `environment.yml` to your project repo / bucket.  This file plus the steps below is enough to rebuild the environment from scratch.
+
+---
+
+## 2  Re‑create the VM‑level NVIDIA stack (only when provisioning a fresh VM)
+
+1. **Create/attach a GPU instance** (Tesla T4) in Compute Engine.
+2. SSH in and install the driver (already done, but for a fresh VM):
+
+   ```bash
+   sudo apt update && sudo apt install -y cuda-drivers
+   ```
+3. **Install CUDA Toolkit 12.3** (for `nvcc`) and expose it:
+
+   ```bash
+   # add NVIDIA repo once; then
+   sudo apt install -y cuda-toolkit-12-3
+   echo 'export PATH=/usr/local/cuda-12.3/bin:$PATH' >> ~/.bashrc
+   echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.3/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+   source ~/.bashrc
+   nvcc --version   # sanity‑check
+   ```
+
+---
+
+## 3  Create the Conda env from the saved spec
+
+```bash
+conda env create -f environment.yml   # or YOUR/LOCATION/environment.yml
+conda activate mambatf
+```
+
+If you ever need to rebuild from an **empty** YAML (no local hashes) use:
+
+```bash
+conda env remove -n mambatf -y        # wipe
+conda env create -f environment.yml   # recreate
+```
+
+---
+
+## 4  Post‑create steps (wheels)
+
+The YAML purposely omits two binary wheels that cannot be resolved by Conda:
+
+| Package                             | Wheel (Py 3.10)                                             | Install cmd                                                              |
+| ----------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `pytorch-forecasting`               | current main branch                                         | `pip install git+https://github.com/sktime/pytorch-forecasting.git@main` |
+| `mamba-ssm 2.2.6` (Torch 2.4 wheel) | `mamba_ssm‑2.2.6+cu11torch2.4‑cp310‑cp310‑linux_x86_64.whl` | `pip install ./mamba_ssm‑2.2.6+cu11torch2.4*.whl`                        |
+
+Copy the wheel into the VM first (or `wget` from the release page) then run the install commands **inside** the active environment.
+
+---
+
+## 5  Smoke‑test script
+
+Run the snippet below to confirm the GPU and all three libraries are operational:
+
+```python
+import torch, pytorch_forecasting, mamba_ssm
+print(torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0))
+print('forecasting', pytorch_forecasting.__version__)
+print('mamba‑ssm ', mamba_ssm.__version__)
+print('CUDA OK ?', torch.cuda.is_available())
+```
+
+Expected: GPU name (Tesla T4) appears and no ImportErrors.
+
+---
+
+## 6  Updating the environment
+
+* **Add a package**:  `conda install PKG` *or* `pip install PKG`, then `conda env export --no-builds > environment.yml` to refresh the spec.
+* **Upgrade PyTorch**: bump both `pytorch` and matching `pytorch‑cuda` in YAML, then rebuild or `conda env update -f environment.yml`.
+
+---
+
+## 7  Troubleshooting checklist
+
+1. `nvcc: command not found` –> ensure CUDA Toolkit path is exported in `.bashrc`.
+2. `torch.cuda.is_available() == False` –> driver not installed or mismatched; rerun `nvidia-smi` to debug.
+3. `pip install mamba-ssm` tries to compile –> use pre‑built wheel or install Toolkit.
+
+Happy modeling!  🎉
